@@ -1,127 +1,188 @@
-**Звіт про виконання лабораторної роботи №1**
+**Звіт про виконання лабораторної роботи №2**
 
-**Тема:** Патерн проектування Одинак (Singleton)
+**Тема:** Патерн проектування Фабричний метод (Factory Method)
 
-**Мета:** Здобути навички з реалізацією патерну проектування Одинак.
+**Мета:** Здобути навички з реалізацією патерну проектування Фабричний метод.
 
 ---
 
 **Хід роботи:**
 
-1. **Реалізація системи управління файлами користувача**
+1. **Реалізація системи публікації повідомлень у соціальних мережах**
 
-   Для реалізації системи управління файлами користувача з використанням патерну Одинак необхідно створити клас, який гарантує існування лише одного екземпляра для кожного типу сховища. Це дозволить централізовано керувати підключеннями до різних сховищ та забезпечить розширюваність системи в майбутньому.
+   Для реалізації системи, що публікує повідомлення у різних соціальних мережах, використаємо патерн Фабричний метод. Це дозволить нам створювати об'єкти соціальних мереж динамічно, залежно від потреби, та легко розширювати систему новими соціальними мережами в майбутньому.
 
 2. **Структура класів та методів**
 
-   **Клас `StorageManager` (Одинак)**
+   **Абстрактний клас `SocialNetwork`**
 
    ```cpp
-   class StorageManager {
+   class SocialNetwork {
+   public:
+       virtual void login() = 0;
+       virtual void publishPost(const std::string& content) = 0;
+       virtual ~SocialNetwork() {}
+   };
+   ```
+
+   - **Методи:**
+     - `void login();`
+       - **Параметри:** Немає
+       - **Повертає:** Нічого
+     - `void publishPost(const std::string& content);`
+       - **Параметри:** `content` - текст повідомлення для публікації
+       - **Повертає:** Нічого
+
+   **Клас `Facebook`**
+
+   ```cpp
+   class Facebook : public SocialNetwork {
    private:
-       static StorageManager* instance;
-       StorageManager(); // Приватний конструктор
-       std::map<std::string, Storage*> storages; // Список сховищ
+       std::string login_;
+       std::string password_;
    public:
-       static StorageManager* getInstance();
-       void addStorage(const std::string& userID, Storage* storage);
-       Storage* getStorage(const std::string& userID);
+       Facebook(const std::string& login, const std::string& password);
+       void login() override;
+       void publishPost(const std::string& content) override;
+   };
+   ```
+
+   - **Конструктор:**
+     - `Facebook(const std::string& login, const std::string& password);`
+       - **Параметри:** `login` - логін користувача, `password` - пароль
+   - **Методи:**
+     - `void login() override;`
+       - **Параметри:** Немає
+       - **Повертає:** Нічого
+     - `void publishPost(const std::string& content) override;`
+       - **Параметри:** `content` - текст повідомлення
+       - **Повертає:** Нічого
+
+   **Клас `LinkedIn`**
+
+   ```cpp
+   class LinkedIn : public SocialNetwork {
+   private:
+       std::string email_;
+       std::string password_;
+   public:
+       LinkedIn(const std::string& email, const std::string& password);
+       void login() override;
+       void publishPost(const std::string& content) override;
+   };
+   ```
+
+   - **Конструктор:**
+     - `LinkedIn(const std::string& email, const std::string& password);`
+       - **Параметри:** `email` - електронна пошта користувача, `password` - пароль
+   - **Методи:**
+     - `void login() override;`
+       - **Параметри:** Немає
+       - **Повертає:** Нічого
+     - `void publishPost(const std::string& content) override;`
+       - **Параметри:** `content` - текст повідомлення
+       - **Повертає:** Нічого
+
+   **Абстрактний клас `SocialNetworkPoster` (Фабрика)**
+
+   ```cpp
+   class SocialNetworkPoster {
+   public:
+       virtual SocialNetwork* createSocialNetwork() = 0;
+       void post(const std::string& content);
+       virtual ~SocialNetworkPoster() {}
    };
    ```
 
    - **Методи:**
-     - `static StorageManager* getInstance();`
+     - `SocialNetwork* createSocialNetwork();`
        - **Параметри:** Немає
-       - **Повертає:** Єдиний екземпляр класу `StorageManager`
-     - `void addStorage(const std::string& userID, Storage* storage);`
-       - **Параметри:** `userID` - ідентифікатор користувача, `storage` - вказівник на обране сховище
+       - **Повертає:** Вказівник на об'єкт `SocialNetwork`
+     - `void post(const std::string& content);`
+       - **Параметри:** `content` - текст повідомлення
        - **Повертає:** Нічого
-     - `Storage* getStorage(const std::string& userID);`
-       - **Параметри:** `userID` - ідентифікатор користувача
-       - **Повертає:** Вказівник на сховище користувача
 
-   **Абстрактний клас `Storage`**
+   **Клас `FacebookPoster`**
 
    ```cpp
-   class Storage {
+   class FacebookPoster : public SocialNetworkPoster {
+   private:
+       std::string login_;
+       std::string password_;
    public:
-       virtual void connect() = 0;
-       virtual void uploadFile(const std::string& filePath) = 0;
-       virtual void downloadFile(const std::string& fileName) = 0;
-       virtual void deleteFile(const std::string& fileName) = 0;
-       virtual ~Storage() {}
+       FacebookPoster(const std::string& login, const std::string& password);
+       SocialNetwork* createSocialNetwork() override;
    };
    ```
 
+   - **Конструктор:**
+     - `FacebookPoster(const std::string& login, const std::string& password);`
+       - **Параметри:** `login` - логін користувача, `password` - пароль
    - **Методи:**
-     - `void connect();`
+     - `SocialNetwork* createSocialNetwork() override;`
        - **Параметри:** Немає
-       - **Повертає:** Нічого
-     - `void uploadFile(const std::string& filePath);`
-       - **Параметри:** `filePath` - шлях до файлу для завантаження
-       - **Повертає:** Нічого
-     - `void downloadFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для завантаження
-       - **Повертає:** Нічого
-     - `void deleteFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для видалення
-       - **Повертає:** Нічого
+       - **Повертає:** Вказівник на об'єкт `Facebook`
 
-   **Клас `LocalStorage`**
+   **Клас `LinkedInPoster`**
 
    ```cpp
-   class LocalStorage : public Storage {
+   class LinkedInPoster : public SocialNetworkPoster {
+   private:
+       std::string email_;
+       std::string password_;
    public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
+       LinkedInPoster(const std::string& email, const std::string& password);
+       SocialNetwork* createSocialNetwork() override;
    };
    ```
 
-   - **Методи:** Реалізують відповідні функції для локального диска.
+   - **Конструктор:**
+     - `LinkedInPoster(const std::string& email, const std::string& password);`
+       - **Параметри:** `email` - електронна пошта користувача, `password` - пароль
+   - **Методи:**
+     - `SocialNetwork* createSocialNetwork() override;`
+       - **Параметри:** Немає
+       - **Повертає:** Вказівник на об'єкт `LinkedIn`
 
-   **Клас `AmazonS3Storage`**
-
-   ```cpp
-   class AmazonS3Storage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
-   ```
-
-   - **Методи:** Реалізують відповідні функції для Amazon S3.
-
-3. **Розширюваність системи**
-
-   Завдяки використанню абстрактного класу `Storage`, додавання нових типів сховищ у майбутньому буде простим. Достатньо створити новий клас, який успадковує `Storage` та реалізує його методи.
-
-4. **Налаштування сховища для кожного користувача окремо**
-
-   Клас `StorageManager` зберігає відповідність між користувачами та їх обраними сховищами в `std::map<std::string, Storage*> storages;`.
-
-   **Приклад використання:**
+3. **Приклад публікації повідомлень в обох соціальних мережах**
 
    ```cpp
-   // Отримуємо екземпляр менеджера сховищ
-   StorageManager* manager = StorageManager::getInstance();
+   void clientCode(SocialNetworkPoster* poster) {
+       poster->post("Привіт, це тестове повідомлення!");
+   }
 
-   // Створюємо сховище для користувача
-   Storage* userStorage = new LocalStorage();
-   userStorage->connect();
+   int main() {
+       SocialNetworkPoster* facebookPoster = new FacebookPoster("user_login", "user_password");
+       SocialNetworkPoster* linkedInPoster = new LinkedInPoster("user_email@example.com", "user_password");
 
-   // Додаємо сховище для користувача з ID "user123"
-   manager->addStorage("user123", userStorage);
+       clientCode(facebookPoster);
+       clientCode(linkedInPoster);
 
-   // Завантажуємо файл
-   manager->getStorage("user123")->uploadFile("path/to/file.txt");
+       delete facebookPoster;
+       delete linkedInPoster;
+
+       return 0;
+   }
    ```
+
+   - **Функція `clientCode`:**
+     - **Параметри:** `poster` - вказівник на об'єкт `SocialNetworkPoster`
+     - **Повертає:** Нічого
+     - **Опис:** Використовує фабрику для створення соціальної мережі та публікує повідомлення.
+
+   - **Функція `main`:**
+     - Створює об'єкти `FacebookPoster` та `LinkedInPoster` з відповідними даними для входу.
+     - Викликає `clientCode` для публікації повідомлення в кожній соціальній мережі.
+
+4. **Можливість розширення системи**
+
+   Завдяки використанню патерну Фабричний метод, додавання нових соціальних мереж є простим. Для цього потрібно:
+
+   - Створити новий клас, що успадковує `SocialNetwork`, і реалізувати його методи.
+   - Створити відповідний клас-фабрику, що успадковує `SocialNetworkPoster`, і реалізувати метод `createSocialNetwork()`.
 
 ---
 
 **Висновок:**
 
-У ході виконання лабораторної роботи було розроблено структуру класів та методів для системи управління файлами користувача з використанням патерну проектування Одинак. Створена структура дозволяє користувачам підключатися до різних сховищ, обраних індивідуально, та забезпечує можливість розширення списку доступних сховищ у майбутньому.
+У ході виконання лабораторної роботи було розроблено структуру класів та методів для системи публікації повідомлень у соціальних мережах з використанням патерну проектування Фабричний метод. Створена система дозволяє легко додавати нові соціальні мережі та забезпечує гнучкість у розширенні функціоналу в майбутньому. Приклад використання системи демонструє публікацію повідомлень у Facebook та LinkedIn.
