@@ -1,127 +1,229 @@
-**Звіт про виконання лабораторної роботи №1**
+**Звіт про виконання лабораторної роботи №3**
 
-**Тема:** Патерн проектування Одинак (Singleton)
+**Тема:** Патерн проектування Будівельник (Builder)
 
-**Мета:** Здобути навички з реалізацією патерну проектування Одинак.
+**Мета:** Здобути навички з реалізацією патерну проектування Будівельник.
 
 ---
 
 **Хід роботи:**
 
-1. **Реалізація системи управління файлами користувача**
+1. **Реалізація системи власного QueryBuilder для взаємодії з декількома СУБД**
 
-   Для реалізації системи управління файлами користувача з використанням патерну Одинак необхідно створити клас, який гарантує існування лише одного екземпляра для кожного типу сховища. Це дозволить централізовано керувати підключеннями до різних сховищ та забезпечить розширюваність системи в майбутньому.
+   Для створення системи, яка буде генерувати SQL-запити для різних СУБД (PostgreSQL та MySQL), використаємо патерн проектування **Будівельник**. Це дозволить нам будувати складні SQL-запити поетапно, використовуючи спільний інтерфейс, але з можливістю специфічної реалізації для кожної СУБД.
 
 2. **Структура класів та методів**
 
-   **Клас `StorageManager` (Одинак)**
+   **Інтерфейс `IQueryBuilder`**
 
    ```cpp
-   class StorageManager {
+   class IQueryBuilder {
+   public:
+       virtual IQueryBuilder& select(const std::string& fields) = 0;
+       virtual IQueryBuilder& where(const std::string& condition) = 0;
+       virtual IQueryBuilder& limit(int limit) = 0;
+       virtual std::string getSQL() const = 0;
+       virtual ~IQueryBuilder() {}
+   };
+   ```
+
+   - **Методи:**
+     - `IQueryBuilder& select(const std::string& fields);`
+       - **Параметри:** `fields` - список полів для вибору (наприклад, `"id, name, age"`)
+       - **Повертає:** Посилання на об'єкт `IQueryBuilder` для ланцюжкового виклику методів
+     - `IQueryBuilder& where(const std::string& condition);`
+       - **Параметри:** `condition` - умова фільтрації (наприклад, `"age > 18"`)
+       - **Повертає:** Посилання на об'єкт `IQueryBuilder`
+     - `IQueryBuilder& limit(int limit);`
+       - **Параметри:** `limit` - кількість записів для обмеження результату
+       - **Повертає:** Посилання на об'єкт `IQueryBuilder`
+     - `std::string getSQL() const;`
+       - **Параметри:** Немає
+       - **Повертає:** Згенерований SQL-запит у вигляді рядка
+
+   **Клас `PostgreSQLQueryBuilder`**
+
+   ```cpp
+   class PostgreSQLQueryBuilder : public IQueryBuilder {
    private:
-       static StorageManager* instance;
-       StorageManager(); // Приватний конструктор
-       std::map<std::string, Storage*> storages; // Список сховищ
+       std::string query_;
    public:
-       static StorageManager* getInstance();
-       void addStorage(const std::string& userID, Storage* storage);
-       Storage* getStorage(const std::string& userID);
+       PostgreSQLQueryBuilder();
+       IQueryBuilder& select(const std::string& fields) override;
+       IQueryBuilder& where(const std::string& condition) override;
+       IQueryBuilder& limit(int limit) override;
+       std::string getSQL() const override;
    };
    ```
 
+   - **Конструктор:**
+     - `PostgreSQLQueryBuilder();`
+       - Ініціалізує об'єкт запиту
    - **Методи:**
-     - `static StorageManager* getInstance();`
-       - **Параметри:** Немає
-       - **Повертає:** Єдиний екземпляр класу `StorageManager`
-     - `void addStorage(const std::string& userID, Storage* storage);`
-       - **Параметри:** `userID` - ідентифікатор користувача, `storage` - вказівник на обране сховище
-       - **Повертає:** Нічого
-     - `Storage* getStorage(const std::string& userID);`
-       - **Параметри:** `userID` - ідентифікатор користувача
-       - **Повертає:** Вказівник на сховище користувача
+     - `IQueryBuilder& select(const std::string& fields) override;`
+       - **Реалізація:** Додає оператор `SELECT` для PostgreSQL
+     - `IQueryBuilder& where(const std::string& condition) override;`
+       - **Реалізація:** Додає оператор `WHERE`
+     - `IQueryBuilder& limit(int limit) override;`
+       - **Реалізація:** Додає оператор `LIMIT`
+     - `std::string getSQL() const override;`
+       - **Реалізація:** Повертає згенерований SQL-запит
 
-   **Абстрактний клас `Storage`**
+   **Клас `MySQLQueryBuilder`**
 
    ```cpp
-   class Storage {
+   class MySQLQueryBuilder : public IQueryBuilder {
+   private:
+       std::string query_;
    public:
-       virtual void connect() = 0;
-       virtual void uploadFile(const std::string& filePath) = 0;
-       virtual void downloadFile(const std::string& fileName) = 0;
-       virtual void deleteFile(const std::string& fileName) = 0;
-       virtual ~Storage() {}
+       MySQLQueryBuilder();
+       IQueryBuilder& select(const std::string& fields) override;
+       IQueryBuilder& where(const std::string& condition) override;
+       IQueryBuilder& limit(int limit) override;
+       std::string getSQL() const override;
    };
    ```
 
+   - **Конструктор:**
+     - `MySQLQueryBuilder();`
+       - Ініціалізує об'єкт запиту
    - **Методи:**
-     - `void connect();`
-       - **Параметри:** Немає
-       - **Повертає:** Нічого
-     - `void uploadFile(const std::string& filePath);`
-       - **Параметри:** `filePath` - шлях до файлу для завантаження
-       - **Повертає:** Нічого
-     - `void downloadFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для завантаження
-       - **Повертає:** Нічого
-     - `void deleteFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для видалення
-       - **Повертає:** Нічого
+     - `IQueryBuilder& select(const std::string& fields) override;`
+       - **Реалізація:** Додає оператор `SELECT` для MySQL
+     - `IQueryBuilder& where(const std::string& condition) override;`
+       - **Реалізація:** Додає оператор `WHERE`
+     - `IQueryBuilder& limit(int limit) override;`
+       - **Реалізація:** Додає оператор `LIMIT`
+     - `std::string getSQL() const override;`
+       - **Реалізація:** Повертає згенерований SQL-запит
 
-   **Клас `LocalStorage`**
+   **Загальна структура класів:**
 
-   ```cpp
-   class LocalStorage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
+   ```
+   IQueryBuilder (інтерфейс)
+   ├── PostgreSQLQueryBuilder (реалізує IQueryBuilder)
+   └── MySQLQueryBuilder (реалізує IQueryBuilder)
    ```
 
-   - **Методи:** Реалізують відповідні функції для локального диска.
-
-   **Клас `AmazonS3Storage`**
+3. **Приклад клієнтського коду з використанням звернення до обох СУБД**
 
    ```cpp
-   class AmazonS3Storage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
+   #include <iostream>
+   #include <string>
+
+   // Припустимо, що інтерфейс та класи вже визначені
+
+   void clientCode(IQueryBuilder& builder) {
+       std::string sql = builder.select("id, name, email")
+                               .where("age > 18")
+                               .limit(10)
+                               .getSQL();
+       std::cout << sql << std::endl;
+   }
+
+   int main() {
+       PostgreSQLQueryBuilder pgBuilder;
+       MySQLQueryBuilder mysqlBuilder;
+
+       std::cout << "PostgreSQL Query:" << std::endl;
+       clientCode(pgBuilder);
+
+       std::cout << "\nMySQL Query:" << std::endl;
+       clientCode(mysqlBuilder);
+
+       return 0;
+   }
    ```
 
-   - **Методи:** Реалізують відповідні функції для Amazon S3.
+   **Опис:**
 
-3. **Розширюваність системи**
+   - **Функція `clientCode`:**
+     - **Параметри:** `builder` - посилання на об'єкт `IQueryBuilder`
+     - **Повертає:** Нічого
+     - **Опис:** Використовує будівельник для побудови SQL-запиту
+   - **Функція `main`:**
+     - Створює об'єкти `PostgreSQLQueryBuilder` та `MySQLQueryBuilder`
+     - Викликає `clientCode` для кожного будівельника, демонструючи генерацію SQL-запитів для обох СУБД
 
-   Завдяки використанню абстрактного класу `Storage`, додавання нових типів сховищ у майбутньому буде простим. Достатньо створити новий клас, який успадковує `Storage` та реалізує його методи.
+   **Вивід програми (приклад):**
 
-4. **Налаштування сховища для кожного користувача окремо**
+   ```
+   PostgreSQL Query:
+   SELECT id, name, email WHERE age > 18 LIMIT 10;
 
-   Клас `StorageManager` зберігає відповідність між користувачами та їх обраними сховищами в `std::map<std::string, Storage*> storages;`.
+   MySQL Query:
+   SELECT id, name, email WHERE age > 18 LIMIT 10;
+   ```
 
-   **Приклад використання:**
+   **Примітка:** В реальній реалізації SQL-запити можуть мати різний синтаксис для різних СУБД. Наприклад, обмеження результатів у PostgreSQL може використовувати `LIMIT`, а в MySQL — `LIMIT`. У даному прикладі синтаксис однаковий, але в реальній ситуації можливі відмінності.
+
+4. **Реалізація методів класів**
+
+   **Клас `PostgreSQLQueryBuilder`**
 
    ```cpp
-   // Отримуємо екземпляр менеджера сховищ
-   StorageManager* manager = StorageManager::getInstance();
+   PostgreSQLQueryBuilder::PostgreSQLQueryBuilder() {
+       query_ = "";
+   }
 
-   // Створюємо сховище для користувача
-   Storage* userStorage = new LocalStorage();
-   userStorage->connect();
+   IQueryBuilder& PostgreSQLQueryBuilder::select(const std::string& fields) {
+       query_ = "SELECT " + fields;
+       return *this;
+   }
 
-   // Додаємо сховище для користувача з ID "user123"
-   manager->addStorage("user123", userStorage);
+   IQueryBuilder& PostgreSQLQueryBuilder::where(const std::string& condition) {
+       query_ += " WHERE " + condition;
+       return *this;
+   }
 
-   // Завантажуємо файл
-   manager->getStorage("user123")->uploadFile("path/to/file.txt");
+   IQueryBuilder& PostgreSQLQueryBuilder::limit(int limit) {
+       query_ += " LIMIT " + std::to_string(limit);
+       return *this;
+   }
+
+   std::string PostgreSQLQueryBuilder::getSQL() const {
+       return query_ + ";";
+   }
    ```
+
+   **Клас `MySQLQueryBuilder`**
+
+   ```cpp
+   MySQLQueryBuilder::MySQLQueryBuilder() {
+       query_ = "";
+   }
+
+   IQueryBuilder& MySQLQueryBuilder::select(const std::string& fields) {
+       query_ = "SELECT " + fields;
+       return *this;
+   }
+
+   IQueryBuilder& MySQLQueryBuilder::where(const std::string& condition) {
+       query_ += " WHERE " + condition;
+       return *this;
+   }
+
+   IQueryBuilder& MySQLQueryBuilder::limit(int limit) {
+       query_ += " LIMIT " + std::to_string(limit);
+       return *this;
+   }
+
+   std::string MySQLQueryBuilder::getSQL() const {
+       return query_ + ";";
+   }
+   ```
+
+5. **Розширюваність системи**
+
+   Завдяки використанню патерну **Будівельник**, додавання підтримки нових СУБД є простим. Для цього потрібно:
+
+   - Створити новий клас, який успадковує `IQueryBuilder`, та реалізувати його методи згідно з синтаксисом нової СУБД.
+   - Використовувати новий будівельник аналогічно до вже існуючих у клієнтському коді.
 
 ---
 
 **Висновок:**
 
-У ході виконання лабораторної роботи було розроблено структуру класів та методів для системи управління файлами користувача з використанням патерну проектування Одинак. Створена структура дозволяє користувачам підключатися до різних сховищ, обраних індивідуально, та забезпечує можливість розширення списку доступних сховищ у майбутньому.
+У ході виконання лабораторної роботи було розроблено структуру класів та методів для створення власного `QueryBuilder` з використанням патерну проектування **Будівельник**. Система підтримує генерацію SQL-запитів для двох СУБД: PostgreSQL та MySQL. Обидва будівельники мають спільний інтерфейс, що дозволяє використовувати їх взаємозамінно у клієнтському коді. Також наведено приклад клієнтського коду, який демонструє побудову та отримання SQL-запитів для обох СУБД.
+
+Завдяки використанню патерну **Будівельник**, система є легко розширюваною та підтримує додавання нових СУБД у майбутньому.
