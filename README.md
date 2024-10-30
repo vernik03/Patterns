@@ -1,127 +1,137 @@
-**Звіт про виконання лабораторної роботи №1**
+### Звіт про виконання лабораторної роботи №7
 
-**Тема:** Патерн проектування Одинак (Singleton)
+**Тема:** Патерн проектування Стратегія
 
-**Мета:** Здобути навички з реалізацією патерну проектування Одинак.
-
----
-
-**Хід роботи:**
-
-1. **Реалізація системи управління файлами користувача**
-
-   Для реалізації системи управління файлами користувача з використанням патерну Одинак необхідно створити клас, який гарантує існування лише одного екземпляра для кожного типу сховища. Це дозволить централізовано керувати підключеннями до різних сховищ та забезпечить розширюваність системи в майбутньому.
-
-2. **Структура класів та методів**
-
-   **Клас `StorageManager` (Одинак)**
-
-   ```cpp
-   class StorageManager {
-   private:
-       static StorageManager* instance;
-       StorageManager(); // Приватний конструктор
-       std::map<std::string, Storage*> storages; // Список сховищ
-   public:
-       static StorageManager* getInstance();
-       void addStorage(const std::string& userID, Storage* storage);
-       Storage* getStorage(const std::string& userID);
-   };
-   ```
-
-   - **Методи:**
-     - `static StorageManager* getInstance();`
-       - **Параметри:** Немає
-       - **Повертає:** Єдиний екземпляр класу `StorageManager`
-     - `void addStorage(const std::string& userID, Storage* storage);`
-       - **Параметри:** `userID` - ідентифікатор користувача, `storage` - вказівник на обране сховище
-       - **Повертає:** Нічого
-     - `Storage* getStorage(const std::string& userID);`
-       - **Параметри:** `userID` - ідентифікатор користувача
-       - **Повертає:** Вказівник на сховище користувача
-
-   **Абстрактний клас `Storage`**
-
-   ```cpp
-   class Storage {
-   public:
-       virtual void connect() = 0;
-       virtual void uploadFile(const std::string& filePath) = 0;
-       virtual void downloadFile(const std::string& fileName) = 0;
-       virtual void deleteFile(const std::string& fileName) = 0;
-       virtual ~Storage() {}
-   };
-   ```
-
-   - **Методи:**
-     - `void connect();`
-       - **Параметри:** Немає
-       - **Повертає:** Нічого
-     - `void uploadFile(const std::string& filePath);`
-       - **Параметри:** `filePath` - шлях до файлу для завантаження
-       - **Повертає:** Нічого
-     - `void downloadFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для завантаження
-       - **Повертає:** Нічого
-     - `void deleteFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для видалення
-       - **Повертає:** Нічого
-
-   **Клас `LocalStorage`**
-
-   ```cpp
-   class LocalStorage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
-   ```
-
-   - **Методи:** Реалізують відповідні функції для локального диска.
-
-   **Клас `AmazonS3Storage`**
-
-   ```cpp
-   class AmazonS3Storage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
-   ```
-
-   - **Методи:** Реалізують відповідні функції для Amazon S3.
-
-3. **Розширюваність системи**
-
-   Завдяки використанню абстрактного класу `Storage`, додавання нових типів сховищ у майбутньому буде простим. Достатньо створити новий клас, який успадковує `Storage` та реалізує його методи.
-
-4. **Налаштування сховища для кожного користувача окремо**
-
-   Клас `StorageManager` зберігає відповідність між користувачами та їх обраними сховищами в `std::map<std::string, Storage*> storages;`.
-
-   **Приклад використання:**
-
-   ```cpp
-   // Отримуємо екземпляр менеджера сховищ
-   StorageManager* manager = StorageManager::getInstance();
-
-   // Створюємо сховище для користувача
-   Storage* userStorage = new LocalStorage();
-   userStorage->connect();
-
-   // Додаємо сховище для користувача з ID "user123"
-   manager->addStorage("user123", userStorage);
-
-   // Завантажуємо файл
-   manager->getStorage("user123")->uploadFile("path/to/file.txt");
-   ```
+**Мета:** Здобуття навичок із реалізації патерну проектування "Стратегія".
 
 ---
 
-**Висновок:**
+### Хід роботи
 
-У ході виконання лабораторної роботи було розроблено структуру класів та методів для системи управління файлами користувача з використанням патерну проектування Одинак. Створена структура дозволяє користувачам підключатися до різних сховищ, обраних індивідуально, та забезпечує можливість розширення списку доступних сховищ у майбутньому.
+### 1. Теоретична частина
+
+**Патерн "Стратегія"** є поведінковим патерном, який дає змогу визначити сімейство алгоритмів, інкапсулювати кожен із них та зробити їх взаємозамінними. Патерн дозволяє змінювати алгоритми незалежно від клієнтів, які їх використовують. 
+
+У нашій задачі це дозволить нам створити різні стратегії для розрахунку вартості доставки, які можна обирати та змінювати в залежності від умов або побажань користувача.
+
+### 2. Опис завдання
+
+Ми розробляємо додаток для доставки їжі, який має три способи доставки:
+1. Самовивіз
+2. Доставка зовнішньою службою доставки
+3. Доставка власною службою доставки
+
+Після того, як користувач обере бажаний спосіб доставки, додаток має розрахувати вартість відповідно до вибраної стратегії.
+
+### 3. Проектування класів
+
+Для реалізації патерну "Стратегія" в нашому додатку необхідно створити:
+- Абстрактний клас `DeliveryStrategy`, який буде інтерфейсом для всіх стратегій доставки.
+- Конкретні стратегії для кожного способу доставки.
+- Клас `DeliveryCostCalculator`, який використовуватиме обрану стратегію для розрахунку вартості.
+
+### 4. Реалізація класів
+
+Нижче наведено структуру класів та методів без реалізації самих методів.
+
+#### 4.1. Інтерфейс стратегії доставки
+
+```cpp
+// Інтерфейс для всіх стратегій доставки
+class DeliveryStrategy {
+public:
+    virtual double calculateCost(double distance, double weight) const = 0;
+    virtual ~DeliveryStrategy() = default;
+};
+```
+
+#### 4.2. Конкретні стратегії
+
+Кожен з класів нижче представляє конкретний спосіб доставки.
+
+```cpp
+// Стратегія для самовивозу
+class PickupStrategy : public DeliveryStrategy {
+public:
+    double calculateCost(double distance, double weight) const override;
+};
+
+// Стратегія для доставки зовнішньою службою
+class ExternalDeliveryStrategy : public DeliveryStrategy {
+public:
+    double calculateCost(double distance, double weight) const override;
+};
+
+// Стратегія для доставки власною службою
+class OwnDeliveryStrategy : public DeliveryStrategy {
+public:
+    double calculateCost(double distance, double weight) const override;
+};
+```
+
+#### 4.3. Контекстний клас для розрахунку вартості доставки
+
+Клас `DeliveryCostCalculator` виступає як контекст для обраної стратегії. Він надає інтерфейс для вибору стратегії доставки та розрахунку вартості.
+
+```cpp
+// Контекстний клас для розрахунку вартості доставки
+class DeliveryCostCalculator {
+private:
+    DeliveryStrategy* strategy;
+public:
+    // Конструктор з передачею стратегії
+    explicit DeliveryCostCalculator(DeliveryStrategy* strategy) : strategy(strategy) {}
+
+    // Метод для зміни стратегії доставки
+    void setStrategy(DeliveryStrategy* newStrategy) {
+        strategy = newStrategy;
+    }
+
+    // Метод для розрахунку вартості доставки з використанням обраної стратегії
+    double calculateDeliveryCost(double distance, double weight) const {
+        return strategy->calculateCost(distance, weight);
+    }
+};
+```
+
+### 5. Опис роботи класів
+
+1. **DeliveryStrategy** – це абстрактний клас, який визначає інтерфейс для всіх стратегій доставки. Він має віртуальний метод `calculateCost()`, який приймає відстань та вагу і повертає вартість доставки.
+  
+2. **PickupStrategy, ExternalDeliveryStrategy, OwnDeliveryStrategy** – кожен із цих класів реалізує метод `calculateCost()` відповідно до своїх правил розрахунку. Наприклад, `PickupStrategy` може повертати нульову вартість, оскільки самовивіз не потребує доставки.
+
+3. **DeliveryCostCalculator** – контекстний клас, який зберігає поточну стратегію доставки і надає можливість обирати іншу стратегію через метод `setStrategy()`. Метод `calculateDeliveryCost()` використовує встановлену стратегію для обчислення вартості доставки.
+
+### 6. Використання
+
+Приклад використання класів у головній функції:
+
+```cpp
+int main() {
+    // Приклад створення стратегії
+    PickupStrategy pickup;
+    ExternalDeliveryStrategy external;
+    OwnDeliveryStrategy own;
+
+    // Створення об'єкта калькулятора з початковою стратегією самовивозу
+    DeliveryCostCalculator calculator(&pickup);
+
+    // Розрахунок вартості доставки для самовивозу
+    double cost = calculator.calculateDeliveryCost(10, 2);
+    
+    // Зміна стратегії на доставку зовнішньою службою
+    calculator.setStrategy(&external);
+    cost = calculator.calculateDeliveryCost(10, 2);
+
+    // Зміна стратегії на власну службу доставки
+    calculator.setStrategy(&own);
+    cost = calculator.calculateDeliveryCost(10, 2);
+
+    return 0;
+}
+```
+---
+
+### Висновок
+
+У ході лабораторної роботи було розроблено структуру класів для додатку доставки їжі із застосуванням патерну "Стратегія". Цей патерн дозволив створити модульну систему розрахунку вартості доставки з можливістю легкого додавання або зміни способів доставки без потреби вносити зміни в основний код.
