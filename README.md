@@ -1,127 +1,142 @@
-**Звіт про виконання лабораторної роботи №1**
+**Звіт про виконання лабораторної роботи №8**
 
-**Тема:** Патерн проектування Одинак (Singleton)
+**Тема:** Патерн проектування "Шаблонний метод"
 
-**Мета:** Здобути навички з реалізацією патерну проектування Одинак.
-
----
-
-**Хід роботи:**
-
-1. **Реалізація системи управління файлами користувача**
-
-   Для реалізації системи управління файлами користувача з використанням патерну Одинак необхідно створити клас, який гарантує існування лише одного екземпляра для кожного типу сховища. Це дозволить централізовано керувати підключеннями до різних сховищ та забезпечить розширюваність системи в майбутньому.
-
-2. **Структура класів та методів**
-
-   **Клас `StorageManager` (Одинак)**
-
-   ```cpp
-   class StorageManager {
-   private:
-       static StorageManager* instance;
-       StorageManager(); // Приватний конструктор
-       std::map<std::string, Storage*> storages; // Список сховищ
-   public:
-       static StorageManager* getInstance();
-       void addStorage(const std::string& userID, Storage* storage);
-       Storage* getStorage(const std::string& userID);
-   };
-   ```
-
-   - **Методи:**
-     - `static StorageManager* getInstance();`
-       - **Параметри:** Немає
-       - **Повертає:** Єдиний екземпляр класу `StorageManager`
-     - `void addStorage(const std::string& userID, Storage* storage);`
-       - **Параметри:** `userID` - ідентифікатор користувача, `storage` - вказівник на обране сховище
-       - **Повертає:** Нічого
-     - `Storage* getStorage(const std::string& userID);`
-       - **Параметри:** `userID` - ідентифікатор користувача
-       - **Повертає:** Вказівник на сховище користувача
-
-   **Абстрактний клас `Storage`**
-
-   ```cpp
-   class Storage {
-   public:
-       virtual void connect() = 0;
-       virtual void uploadFile(const std::string& filePath) = 0;
-       virtual void downloadFile(const std::string& fileName) = 0;
-       virtual void deleteFile(const std::string& fileName) = 0;
-       virtual ~Storage() {}
-   };
-   ```
-
-   - **Методи:**
-     - `void connect();`
-       - **Параметри:** Немає
-       - **Повертає:** Нічого
-     - `void uploadFile(const std::string& filePath);`
-       - **Параметри:** `filePath` - шлях до файлу для завантаження
-       - **Повертає:** Нічого
-     - `void downloadFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для завантаження
-       - **Повертає:** Нічого
-     - `void deleteFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для видалення
-       - **Повертає:** Нічого
-
-   **Клас `LocalStorage`**
-
-   ```cpp
-   class LocalStorage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
-   ```
-
-   - **Методи:** Реалізують відповідні функції для локального диска.
-
-   **Клас `AmazonS3Storage`**
-
-   ```cpp
-   class AmazonS3Storage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
-   ```
-
-   - **Методи:** Реалізують відповідні функції для Amazon S3.
-
-3. **Розширюваність системи**
-
-   Завдяки використанню абстрактного класу `Storage`, додавання нових типів сховищ у майбутньому буде простим. Достатньо створити новий клас, який успадковує `Storage` та реалізує його методи.
-
-4. **Налаштування сховища для кожного користувача окремо**
-
-   Клас `StorageManager` зберігає відповідність між користувачами та їх обраними сховищами в `std::map<std::string, Storage*> storages;`.
-
-   **Приклад використання:**
-
-   ```cpp
-   // Отримуємо екземпляр менеджера сховищ
-   StorageManager* manager = StorageManager::getInstance();
-
-   // Створюємо сховище для користувача
-   Storage* userStorage = new LocalStorage();
-   userStorage->connect();
-
-   // Додаємо сховище для користувача з ID "user123"
-   manager->addStorage("user123", userStorage);
-
-   // Завантажуємо файл
-   manager->getStorage("user123")->uploadFile("path/to/file.txt");
-   ```
+**Мета:** Здобути навички реалізації патерна "Шаблонний метод".
 
 ---
 
-**Висновок:**
+### Хід роботи
 
-У ході виконання лабораторної роботи було розроблено структуру класів та методів для системи управління файлами користувача з використанням патерну проектування Одинак. Створена структура дозволяє користувачам підключатися до різних сховищ, обраних індивідуально, та забезпечує можливість розширення списку доступних сховищ у майбутньому.
+### 1. Теоретична частина
+
+**Патерн "Шаблонний метод"** – це поведінковий патерн, який визначає алгоритм у базовому класі, залишаючи деякі кроки реалізації на розсуд підкласів. Він дозволяє підкласам змінювати певні кроки алгоритму, не змінюючи структуру алгоритму в цілому.
+
+У даній роботі цей патерн застосовується для процесу оновлення даних у трьох сутностях. Кожна сутність виконує однаковий загальний алгоритм, але із незначними відмінностями в кроках.
+
+### 2. Опис завдання
+
+Маємо три сутності:
+1. **Товар** – якщо валідація не пройшла, адміністратор отримує сповіщення.
+2. **Користувач** – заборонено змінювати поле `email`, хоч воно є у валідаційній таблиці як дозволене для змін.
+3. **Замовлення** – відповідь має містити не лише код і статус, але й JSON-подання сутності.
+
+Загальний алгоритм для всіх сутностей:
+1. Отримання об'єкта для оновлення.
+2. Валідація вихідних даних.
+3. Формування запиту на збереження.
+4. Формування відповіді.
+
+### 3. Проектування класів
+
+Для реалізації шаблонного методу необхідно:
+- Створити базовий клас `EntityUpdate`, що міститиме загальний алгоритм оновлення з можливістю точкових змін через віртуальні методи.
+- Створити окремі класи для кожної сутності: `ProductUpdate`, `UserUpdate` та `OrderUpdate`, які будуть розширювати `EntityUpdate` та реалізовувати специфічні вимоги для кожної сутності.
+
+### 4. Реалізація класів
+
+Нижче представлена структура класів без деталей реалізації методів.
+
+#### 4.1. Базовий клас `EntityUpdate`
+
+```cpp
+// Базовий клас для процесу оновлення сутностей
+class EntityUpdate {
+public:
+    // Шаблонний метод для оновлення сутності
+    void update() {
+        getEntity();
+        if (!validateData()) {
+            onValidationFailed();
+            return;
+        }
+        saveData();
+        sendResponse();
+    }
+
+protected:
+    // Методи основного процесу
+    virtual void getEntity() = 0;
+    virtual bool validateData() = 0;
+    virtual void saveData() = 0;
+    virtual void sendResponse() = 0;
+
+    // Хук для додаткових дій при невдалій валідації
+    virtual void onValidationFailed() {}
+};
+```
+
+#### 4.2. Класи для кожної сутності
+
+Кожен клас нижче представляє специфічну сутність і містить модифіковані методи для реалізації особливих вимог.
+
+```cpp
+// Оновлення для сутності Товар
+class ProductUpdate : public EntityUpdate {
+protected:
+    void getEntity() override;
+    bool validateData() override;
+    void saveData() override;
+    void sendResponse() override;
+
+    // Перевизначення для сповіщення адміністратора у випадку помилки валідації
+    void onValidationFailed() override;
+};
+
+// Оновлення для сутності Користувач
+class UserUpdate : public EntityUpdate {
+protected:
+    void getEntity() override;
+    bool validateData() override;
+    void saveData() override;
+    void sendResponse() override;
+
+    // Метод для заборони зміни поля email
+    bool isEmailChangeAllowed() const;
+};
+
+// Оновлення для сутності Замовлення
+class OrderUpdate : public EntityUpdate {
+protected:
+    void getEntity() override;
+    bool validateData() override;
+    void saveData() override;
+
+    // Перевизначення для додавання JSON-подання у відповідь
+    void sendResponse() override;
+};
+```
+
+### 5. Опис роботи класів
+
+1. **EntityUpdate** – це абстрактний базовий клас, який містить шаблонний метод `update()` для оновлення сутностей. Алгоритм містить такі кроки: отримання об'єкта, валідація, збереження та відповідь. Додатковий хук `onValidationFailed()` дозволяє підкласам реалізовувати дії у разі невдалої валідації, залишаючи структуру процесу незмінною.
+
+2. **ProductUpdate** – клас для оновлення товару. Він перевизначає метод `onValidationFailed()` для сповіщення адміністратора, якщо валідація не пройшла успішно.
+
+3. **UserUpdate** – клас для оновлення користувача. Метод `validateData()` містить додаткову перевірку через хук `isEmailChangeAllowed()`, що забороняє зміну `email` користувача, навіть якщо загальна валідація цього не забороняє.
+
+4. **OrderUpdate** – клас для оновлення замовлення. Метод `sendResponse()` перевизначений так, щоб додатково повертати JSON-подання замовлення.
+
+### 6. Використання
+
+Приклад використання класів у головній функції:
+
+```cpp
+int main() {
+    ProductUpdate productUpdate;
+    productUpdate.update();
+
+    UserUpdate userUpdate;
+    userUpdate.update();
+
+    OrderUpdate orderUpdate;
+    orderUpdate.update();
+
+    return 0;
+}
+```
+---
+
+### Висновок
+
+У цій лабораторній роботі було розроблено структуру класів для оновлення сутностей "Товар", "Користувач" та "Замовлення" з використанням патерна "Шаблонний метод". Використання шаблонного методу дозволило виділити основний алгоритм оновлення в базовий клас, зберігши гнучкість для кожної сутності. Реалізація хуків у шаблонному методі забезпечує можливість індивідуальних змін у підкласах, не змінюючи базову структуру алгоритму.
