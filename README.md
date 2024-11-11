@@ -1,127 +1,331 @@
-**Звіт про виконання лабораторної роботи №1**
+**Звіт про виконання лабораторної роботи №10**
 
-**Тема:** Патерн проектування Одинак (Singleton)
+**Тема:** Патерн проектування Посередник.
 
-**Мета:** Здобути навички з реалізацією патерну проектування Одинак.
-
----
+**Мета:** Здобути навички з реалізацією патерна проектування Посередник.
 
 **Хід роботи:**
 
-1. **Реалізація системи управління файлами користувача**
+Для реалізації завдання необхідно створити структуру класів та методів, яка буде демонструвати реалізацію патерна Посередник і вирішувати описане завдання.
 
-   Для реалізації системи управління файлами користувача з використанням патерну Одинак необхідно створити клас, який гарантує існування лише одного екземпляра для кожного типу сховища. Це дозволить централізовано керувати підключеннями до різних сховищ та забезпечить розширюваність системи в майбутньому.
+**Реалізація:**
 
-2. **Структура класів та методів**
+1. **Інтерфейс Посередника**
 
-   **Клас `StorageManager` (Одинак)**
+```cpp
+// IOrderFormMediator.h
+class Component;
 
-   ```cpp
-   class StorageManager {
-   private:
-       static StorageManager* instance;
-       StorageManager(); // Приватний конструктор
-       std::map<std::string, Storage*> storages; // Список сховищ
-   public:
-       static StorageManager* getInstance();
-       void addStorage(const std::string& userID, Storage* storage);
-       Storage* getStorage(const std::string& userID);
-   };
-   ```
+class IOrderFormMediator {
+public:
+    virtual void Notify(Component* sender, const std::string& event) = 0;
+    virtual ~IOrderFormMediator() {}
+};
+```
 
-   - **Методи:**
-     - `static StorageManager* getInstance();`
-       - **Параметри:** Немає
-       - **Повертає:** Єдиний екземпляр класу `StorageManager`
-     - `void addStorage(const std::string& userID, Storage* storage);`
-       - **Параметри:** `userID` - ідентифікатор користувача, `storage` - вказівник на обране сховище
-       - **Повертає:** Нічого
-     - `Storage* getStorage(const std::string& userID);`
-       - **Параметри:** `userID` - ідентифікатор користувача
-       - **Повертає:** Вказівник на сховище користувача
+2. **Базовий клас Компонента**
 
-   **Абстрактний клас `Storage`**
+```cpp
+// Component.h
+class Component {
+protected:
+    IOrderFormMediator* mediator;
+public:
+    Component(IOrderFormMediator* mediator = nullptr) : mediator(mediator) {}
+    void SetMediator(IOrderFormMediator* mediator) {
+        this->mediator = mediator;
+    }
+    virtual void SetEnabled(bool enabled) = 0;
+};
+```
 
-   ```cpp
-   class Storage {
-   public:
-       virtual void connect() = 0;
-       virtual void uploadFile(const std::string& filePath) = 0;
-       virtual void downloadFile(const std::string& fileName) = 0;
-       virtual void deleteFile(const std::string& fileName) = 0;
-       virtual ~Storage() {}
-   };
-   ```
+3. **Конкретні Компоненти**
 
-   - **Методи:**
-     - `void connect();`
-       - **Параметри:** Немає
-       - **Повертає:** Нічого
-     - `void uploadFile(const std::string& filePath);`
-       - **Параметри:** `filePath` - шлях до файлу для завантаження
-       - **Повертає:** Нічого
-     - `void downloadFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для завантаження
-       - **Повертає:** Нічого
-     - `void deleteFile(const std::string& fileName);`
-       - **Параметри:** `fileName` - ім'я файлу для видалення
-       - **Повертає:** Нічого
+- **DatePicker** (компонент вибору дати доставки)
 
-   **Клас `LocalStorage`**
+```cpp
+// DatePicker.h
+class DatePicker : public Component {
+private:
+    std::string selectedDate;
+    bool enabled;
+public:
+    DatePicker(IOrderFormMediator* mediator = nullptr);
+    void SetDate(const std::string& date);
+    std::string GetDate() const;
+    void SetEnabled(bool enabled) override;
+    bool IsEnabled() const;
+};
+```
 
-   ```cpp
-   class LocalStorage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
-   ```
+- **TimeSlotSelector** (компонент вибору проміжку часу)
 
-   - **Методи:** Реалізують відповідні функції для локального диска.
+```cpp
+// TimeSlotSelector.h
+class TimeSlotSelector : public Component {
+private:
+    std::vector<std::string> availableTimeSlots;
+    std::string selectedTimeSlot;
+    bool enabled;
+public:
+    TimeSlotSelector(IOrderFormMediator* mediator = nullptr);
+    void SetAvailableTimeSlots(const std::vector<std::string>& timeSlots);
+    void SetTimeSlot(const std::string& timeSlot);
+    std::string GetTimeSlot() const;
+    void SetEnabled(bool enabled) override;
+    bool IsEnabled() const;
+};
+```
 
-   **Клас `AmazonS3Storage`**
+- **RecipientInfo** (інформація про отримувача)
 
-   ```cpp
-   class AmazonS3Storage : public Storage {
-   public:
-       void connect() override;
-       void uploadFile(const std::string& filePath) override;
-       void downloadFile(const std::string& fileName) override;
-       void deleteFile(const std::string& fileName) override;
-   };
-   ```
+```cpp
+// RecipientInfo.h
+class RecipientInfo : public Component {
+private:
+    std::string name;
+    std::string phone;
+    bool isVisible;
+    bool enabled;
+public:
+    RecipientInfo(IOrderFormMediator* mediator = nullptr);
+    void SetName(const std::string& name);
+    void SetPhone(const std::string& phone);
+    std::string GetName() const;
+    std::string GetPhone() const;
+    void SetVisibility(bool visible);
+    bool IsVisible() const;
+    void SetEnabled(bool enabled) override;
+    bool IsEnabled() const;
+};
+```
 
-   - **Методи:** Реалізують відповідні функції для Amazon S3.
+- **OtherRecipientCheckbox** (чекбокс "отримувач інша особа")
 
-3. **Розширюваність системи**
+```cpp
+// OtherRecipientCheckbox.h
+class OtherRecipientCheckbox : public Component {
+private:
+    bool isChecked;
+    bool enabled;
+public:
+    OtherRecipientCheckbox(IOrderFormMediator* mediator = nullptr);
+    void SetChecked(bool checked);
+    bool IsChecked() const;
+    void SetEnabled(bool enabled) override;
+    bool IsEnabled() const;
+};
+```
 
-   Завдяки використанню абстрактного класу `Storage`, додавання нових типів сховищ у майбутньому буде простим. Достатньо створити новий клас, який успадковує `Storage` та реалізує його методи.
+- **SelfPickupCheckbox** (чекбокс "самостійно забрати з магазину")
 
-4. **Налаштування сховища для кожного користувача окремо**
+```cpp
+// SelfPickupCheckbox.h
+class SelfPickupCheckbox : public Component {
+private:
+    bool isChecked;
+    bool enabled;
+public:
+    SelfPickupCheckbox(IOrderFormMediator* mediator = nullptr);
+    void SetChecked(bool checked);
+    bool IsChecked() const;
+    void SetEnabled(bool enabled) override;
+    bool IsEnabled() const;
+};
+```
 
-   Клас `StorageManager` зберігає відповідність між користувачами та їх обраними сховищами в `std::map<std::string, Storage*> storages;`.
+4. **Конкретний Посередник**
 
-   **Приклад використання:**
+```cpp
+// OrderFormMediator.h
+class OrderFormMediator : public IOrderFormMediator {
+private:
+    DatePicker* datePicker;
+    TimeSlotSelector* timeSlotSelector;
+    RecipientInfo* recipientInfo;
+    OtherRecipientCheckbox* otherRecipientCheckbox;
+    SelfPickupCheckbox* selfPickupCheckbox;
+public:
+    OrderFormMediator(DatePicker* dp, TimeSlotSelector* ts, RecipientInfo* ri, OtherRecipientCheckbox* orc, SelfPickupCheckbox* spc);
+    void Notify(Component* sender, const std::string& event) override;
+};
+```
 
-   ```cpp
-   // Отримуємо екземпляр менеджера сховищ
-   StorageManager* manager = StorageManager::getInstance();
+5. **Реалізація методів компонентів**
 
-   // Створюємо сховище для користувача
-   Storage* userStorage = new LocalStorage();
-   userStorage->connect();
+- **DatePicker.cpp**
 
-   // Додаємо сховище для користувача з ID "user123"
-   manager->addStorage("user123", userStorage);
+```cpp
+DatePicker::DatePicker(IOrderFormMediator* mediator) : Component(mediator), enabled(true) {}
 
-   // Завантажуємо файл
-   manager->getStorage("user123")->uploadFile("path/to/file.txt");
-   ```
+void DatePicker::SetDate(const std::string& date) {
+    selectedDate = date;
+    if (mediator) {
+        mediator->Notify(this, "DateChanged");
+    }
+}
 
----
+std::string DatePicker::GetDate() const {
+    return selectedDate;
+}
+
+void DatePicker::SetEnabled(bool enabled) {
+    this->enabled = enabled;
+}
+
+bool DatePicker::IsEnabled() const {
+    return enabled;
+}
+```
+
+- **TimeSlotSelector.cpp**
+
+```cpp
+TimeSlotSelector::TimeSlotSelector(IOrderFormMediator* mediator) : Component(mediator), enabled(true) {}
+
+void TimeSlotSelector::SetAvailableTimeSlots(const std::vector<std::string>& timeSlots) {
+    availableTimeSlots = timeSlots;
+}
+
+void TimeSlotSelector::SetTimeSlot(const std::string& timeSlot) {
+    selectedTimeSlot = timeSlot;
+}
+
+std::string TimeSlotSelector::GetTimeSlot() const {
+    return selectedTimeSlot;
+}
+
+void TimeSlotSelector::SetEnabled(bool enabled) {
+    this->enabled = enabled;
+}
+
+bool TimeSlotSelector::IsEnabled() const {
+    return enabled;
+}
+```
+
+- **RecipientInfo.cpp**
+
+```cpp
+RecipientInfo::RecipientInfo(IOrderFormMediator* mediator) : Component(mediator), isVisible(false), enabled(true) {}
+
+void RecipientInfo::SetName(const std::string& name) {
+    this->name = name;
+}
+
+void RecipientInfo::SetPhone(const std::string& phone) {
+    this->phone = phone;
+}
+
+std::string RecipientInfo::GetName() const {
+    return name;
+}
+
+std::string RecipientInfo::GetPhone() const {
+    return phone;
+}
+
+void RecipientInfo::SetVisibility(bool visible) {
+    isVisible = visible;
+}
+
+bool RecipientInfo::IsVisible() const {
+    return isVisible;
+}
+
+void RecipientInfo::SetEnabled(bool enabled) {
+    this->enabled = enabled;
+}
+
+bool RecipientInfo::IsEnabled() const {
+    return enabled;
+}
+```
+
+- **OtherRecipientCheckbox.cpp**
+
+```cpp
+OtherRecipientCheckbox::OtherRecipientCheckbox(IOrderFormMediator* mediator) : Component(mediator), isChecked(false), enabled(true) {}
+
+void OtherRecipientCheckbox::SetChecked(bool checked) {
+    isChecked = checked;
+    if (mediator) {
+        mediator->Notify(this, "OtherRecipientChanged");
+    }
+}
+
+bool OtherRecipientCheckbox::IsChecked() const {
+    return isChecked;
+}
+
+void OtherRecipientCheckbox::SetEnabled(bool enabled) {
+    this->enabled = enabled;
+}
+
+bool OtherRecipientCheckbox::IsEnabled() const {
+    return enabled;
+}
+```
+
+- **SelfPickupCheckbox.cpp**
+
+```cpp
+SelfPickupCheckbox::SelfPickupCheckbox(IOrderFormMediator* mediator) : Component(mediator), isChecked(false), enabled(true) {}
+
+void SelfPickupCheckbox::SetChecked(bool checked) {
+    isChecked = checked;
+    if (mediator) {
+        mediator->Notify(this, "SelfPickupChanged");
+    }
+}
+
+bool SelfPickupCheckbox::IsChecked() const {
+    return isChecked;
+}
+
+void SelfPickupCheckbox::SetEnabled(bool enabled) {
+    this->enabled = enabled;
+}
+
+bool SelfPickupCheckbox::IsEnabled() const {
+    return enabled;
+}
+```
+
+6. **Реалізація методів Посередника**
+
+- **OrderFormMediator.cpp**
+
+```cpp
+OrderFormMediator::OrderFormMediator(DatePicker* dp, TimeSlotSelector* ts, RecipientInfo* ri, OtherRecipientCheckbox* orc, SelfPickupCheckbox* spc)
+    : datePicker(dp), timeSlotSelector(ts), recipientInfo(ri), otherRecipientCheckbox(orc), selfPickupCheckbox(spc) {
+    datePicker->SetMediator(this);
+    timeSlotSelector->SetMediator(this);
+    recipientInfo->SetMediator(this);
+    otherRecipientCheckbox->SetMediator(this);
+    selfPickupCheckbox->SetMediator(this);
+}
+
+void OrderFormMediator::Notify(Component* sender, const std::string& event) {
+    if (sender == datePicker && event == "DateChanged") {
+        // Оновити список доступних проміжків часу
+        std::vector<std::string> timeSlots = /* логіка отримання доступних проміжків часу на основі datePicker->GetDate() */;
+        timeSlotSelector->SetAvailableTimeSlots(timeSlots);
+    } else if (sender == otherRecipientCheckbox && event == "OtherRecipientChanged") {
+        bool isChecked = otherRecipientCheckbox->IsChecked();
+        recipientInfo->SetVisibility(isChecked);
+        // Поля ім'я та телефон стають обов'язковими, якщо isChecked == true
+    } else if (sender == selfPickupCheckbox && event == "SelfPickupChanged") {
+        bool isChecked = selfPickupCheckbox->IsChecked();
+        // Вимкнути або увімкнути елементи форми доставки
+        datePicker->SetEnabled(!isChecked);
+        timeSlotSelector->SetEnabled(!isChecked);
+        otherRecipientCheckbox->SetEnabled(!isChecked);
+        recipientInfo->SetEnabled(!isChecked && otherRecipientCheckbox->IsChecked());
+    }
+}
+```
 
 **Висновок:**
 
-У ході виконання лабораторної роботи було розроблено структуру класів та методів для системи управління файлами користувача з використанням патерну проектування Одинак. Створена структура дозволяє користувачам підключатися до різних сховищ, обраних індивідуально, та забезпечує можливість розширення списку доступних сховищ у майбутньому.
+У ході виконання лабораторної роботи було створено структуру класів та методів, яка демонструє реалізацію патерна Посередник для сторінки оформлення замовлення в службі доставки квітів. Розроблена система дозволяє компонентам форми взаємодіяти через посередника, що забезпечує слабке зчеплення та гнучкість у взаємодії компонентів.
